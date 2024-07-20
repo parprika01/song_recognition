@@ -181,59 +181,48 @@
 					this.buttonSrc = '../../static/record.png'
 				}
 			},
-			pathToBase64App(path) {
-			    // 通过URL参数获取目录对象或文件对象
-				let self = this;
-				console.log(path);
-			    plus.io.resolveLocalFileSystemURL(path, function(entry) {
-			        entry.file(function(file) {
-			            var fileReader = new plus.io.FileReader()
-						//that.baseFile = file;
-			            fileReader.onload = function(evt) {
-							that.filePath = evt.target.result;
-							uni.request({
-								url:'http://110.41.35.178:8081/upload',
-								method:'POST',
-								header:{
-									'content-type':"application/json"
-								},
-								data:{
-									record:that.filePath,
-									account:that.accountInfo.account,
-								}, //此时的data传正常json形式就好
-								success: (uploadFileRes) => {
-									console.log(uploadFileRes.data);
-									self.isWaiting = false;
-									uploadFileRes = uploadFileRes.data ;
-									self.songInfo = uploadFileRes;
-									if(self.songInfo.isFind == 1){
-										var songData = JSON.stringify(uploadFileRes.song)
-										var accountInfo = JSON.stringify(that.accountInfo)
-										console.log(songData);
-										uni.navigateTo({
-											url:'./player?songData=' + encodeURIComponent(songData)+'&accountInfo='+encodeURIComponent(accountInfo),
-										});
-									}else if(self.songInfo.isFind == -1){
-										self.isPop = true;
-									}
-								},
-								fail:(res)=>{
-									self.test = res;
-								}
-							})
-							
-			            }
-			            fileReader.onerror = function(error) {
-							console.log('failed: ', error);
-			            }
-			            fileReader.readAsDataURL(file)
-			        }, function(error) {
-			            console.log('failed: ', error);
-			        })
-			    }, function(error) {
-					console.log('failed: ', error);
-			    })
-			},
+			//对录音结束进行处理
+			recorderManager.onStop(function (res) {
+				console.log('recorder stop' + JSON.stringify(res));
+				self.voicePath = res.tempFilePath;
+				console.log(self.voicePath);
+				uni.uploadFile({
+					url: 'http://110.41.35.178:8081/testfile',
+					filePath: self.voicePath, 
+					name: 'record',
+					success: (uploadFileRes) => {
+						console.log(uploadFileRes.data);
+						uploadFileRes = JSON.parse(uploadFileRes.data) ;
+						self.songInfo = uploadFileRes;
+						if(self.songInfo.isFind == 1){
+							var songData = JSON.stringify(uploadFileRes.song);
+							uni.navigateTo({
+								url:'../main/playerTest?songData=' + encodeURIComponent(songData),
+							});
+						}else if(self.songInfo.isFind == -1){
+							self.isPop = true;
+						}
+					},
+					fail: (err) => {
+						console.log(err);
+					}
+				});
+				
+				uni.request({
+				    url: 'http://jsonplaceholder.typicode.com/posts/2', //仅为示例，并非真实接口地址。
+				    data: {
+				        text: 'uni.request'
+				    },
+				    success: (res) => {
+				        console.log(res.data);
+				        //this.text = 'request success';
+						that.test = res.data ;
+				    },
+					fail: (err) => {
+						console.log(err);
+					}
+				});
+			});
 		}
 	}
 </script>
